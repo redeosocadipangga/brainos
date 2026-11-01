@@ -349,7 +349,7 @@
         <section id="sec-ai-tutor" class="hidden space-y-6">
             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
                 <div>
-                    <h2 class="text-lg font-bold text-white">AI Active Retrieval Partner (Gemini 2.5)</h2>
+                    <h2 class="text-lg font-bold text-white">AI Active Retrieval Partner (Gemini 1.5)</h2>
                     <p class="text-xs text-slate-400">Asisten AI yang diprogram khusus untuk menguji celah ingatan dan membedah konsep sulit.</p>
                 </div>
                 <div class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800 px-3 py-1 rounded-full font-mono">
@@ -418,7 +418,7 @@
         // Global App State Schema
         const DEFAULT_STATE = {
             activeDomain: 'elektro',
-            geminiApiKey: '',
+            geminiApiKey: 'ISI_API_KEY_KAMU_DI_SINI', // <- PASTE API KEY GEMINI KAMU DI SINI
             domains: {
                 elektro: {
                     title: "Teknik Elektro UMM",
@@ -605,10 +605,8 @@
             lucide.createIcons();
         }
 
-        // FIXED BUG 1: Trigger Recall For Audit Item
         function triggerRecallForAudit(topicName) {
             const domain = appState.domains[appState.activeDomain];
-            // Find index of existing flashcard matching topic
             let foundIdx = domain.flashcards.findIndex(fc => 
                 fc.cat.toLowerCase().includes(topicName.toLowerCase()) || 
                 topicName.toLowerCase().includes(fc.cat.toLowerCase())
@@ -651,7 +649,6 @@
             }
         }
 
-        // FIXED BUG 2: Active Recall Flashcard Navigation & State
         function loadRecallCard() {
             const domain = appState.domains[appState.activeDomain];
             const cards = domain.flashcards;
@@ -680,7 +677,6 @@
             statusBadge.innerText = (card.status || 'RED').toUpperCase();
             statusBadge.className = `text-xs px-2 py-0.5 rounded font-semibold ${card.status==='green'?'bg-emerald-950 text-emerald-400':(card.status==='yellow'?'bg-amber-950 text-amber-400':'bg-rose-950 text-rose-400')}`;
 
-            // Render Math equations if KaTeX auto-render is loaded
             if(window.renderMathInElement) {
                 try {
                     renderMathInElement(document.getElementById('recall-card-container'), {
@@ -750,14 +746,16 @@
             }
         }
 
-        // Gemini AI API Utility
+        // Pemanggilan Gemini API Stabil (Model gemini-1.5-flash)
         async function callGemini(promptText) {
-            if(!appState.geminiApiKey) {
-                alert("API Key Gemini belum terpasang! Silakan buka menu Pengaturan (⚙️) di kanan atas untuk memasukkan Gemini API Key gratis Anda.");
+            const cleanApiKey = (appState.geminiApiKey || 'ISI_API_KEY_KAMU_DI_SINI').trim();
+            if(!cleanApiKey || cleanApiKey === 'ISI_API_KEY_KAMU_DI_SINI') {
+                alert("API Key Gemini belum terpasang! Buka menu Pengaturan (⚙️) atau isi langsung di dalam file index.html.");
                 return null;
             }
+
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${appState.geminiApiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -765,14 +763,19 @@
                     })
                 });
                 const data = await res.json();
+                
+                if (!res.ok || data.error) {
+                    console.error("Gemini Error:", data.error);
+                    alert(`Error Gemini API (${data.error?.code || res.status}): ${data.error?.message || 'API Key tidak valid'}`);
+                    return null;
+                }
                 return data.candidates[0].content.parts[0].text;
             } catch(e) {
-                alert("Gagal koneksi ke Gemini AI API. Periksa koneksi internet atau API key Anda.");
+                alert("Gagal koneksi ke Gemini API. Periksa jaringan internet Anda.");
                 return null;
             }
         }
 
-        // GEMINI AI INTEGRATIONS
         async function aiGenerateAuditBreakdown() {
             const domainTitle = appState.domains[appState.activeDomain].title;
             const topic = prompt(`Masukkan topik spesifik yang ingin di-breakdown untuk domain "${domainTitle}":`, domainTitle);
@@ -853,7 +856,6 @@
             alert("Kunci acuan berhasil diperbarui dari Gemini AI!");
         }
 
-        // Blurting Timer & Text Handler
         function toggleBlurtingTimer() {
             const btn = document.getElementById('btn-timer-toggle');
             if(blurtingTimerInterval) {
@@ -918,7 +920,6 @@
             }
         }
 
-        // Config & Backup JSON
         function openConfigModal() {
             document.getElementById('cfg-gemini-key').value = appState.geminiApiKey || '';
             document.getElementById('configModal').classList.remove('hidden');
@@ -964,7 +965,6 @@
             reader.readAsText(file);
         }
 
-        // AI Examiner Chat Engine
         async function sendAiQuery() {
             const input = document.getElementById('ai-user-prompt');
             const promptText = input.value.trim();
@@ -981,30 +981,19 @@
 
             const aiDiv = document.createElement('div');
             aiDiv.className = 'bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 max-w-2xl text-xs leading-relaxed space-y-1';
+            aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner:</span><p class="animate-pulse">Memproses logika & menyusun soal uji...</p>`;
+            chatHistory.appendChild(aiDiv);
             
-            if(!appState.geminiApiKey) {
-                setTimeout(() => {
-                    aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner (Mode Offline):</span>
-                    <p>Mari uji ingatan Anda terkait <strong>"${promptText}"</strong>!</p>
-                    <p class="mt-2 text-slate-300"><strong>Soal Uji Cepat:</strong> Tuliskan 2 konsep utama atau rumus paling mendasar dari subjek tersebut di lembar kertas HVS Anda tanpa melihat catatan! (Aktifkan Gemini API Key di Pengaturan untuk respon AI otomatis).</p>`;
-                    chatHistory.appendChild(aiDiv);
-                    chatHistory.scrollTop = chatHistory.scrollHeight;
-                }, 400);
+            const responseText = await callGemini(`Anda adalah AI Examiner untuk sistem belajar Active Learning Kinestetik. Pengguna sedang mempelajari: "${promptText}". Berikan penjelasan konsep paling singkat (maksimal 3 kalimat), lalu berikan 1 soal ujian Active Recall mendalam yang memaksa pengguna menjawab dari logika dasarnya!`);
+            
+            if(responseText) {
+                aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner:</span><p>${responseText.replace(/\n/g, '<br>')}</p>`;
             } else {
-                aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner:</span><p class="animate-pulse">Memproses logika & menyusun soal uji...</p>`;
-                chatHistory.appendChild(aiDiv);
-                
-                const responseText = await callGemini(`Anda adalah AI Examiner untuk sistem belajar Active Learning Kinestetik. Pengguna sedang mempelajari: "${promptText}". Berikan penjelasan konsep paling singkat (maksimal 3 kalimat), lalu berikan 1 soal ujian Active Recall mendalam yang memaksa pengguna menjawab dari logika dasarnya!`);
-                if(responseText) {
-                    aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner:</span><p>${responseText.replace(/\n/g, '<br>')}</p>`;
-                } else {
-                    aiDiv.innerHTML = `<span class="font-bold text-rose-400">Error:</span><p>Gagal menghubungi AI API.</p>`;
-                }
-                chatHistory.scrollTop = chatHistory.scrollHeight;
+                aiDiv.innerHTML = `<span class="font-bold text-rose-400">Error:</span><p>Gagal memproses respon AI. Pastikan Kunci API Gemini valid.</p>`;
             }
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             updateDomainSelector();
