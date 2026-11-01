@@ -349,7 +349,7 @@
         <section id="sec-ai-tutor" class="hidden space-y-6">
             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
                 <div>
-                    <h2 class="text-lg font-bold text-white">AI Active Retrieval Partner (Gemini 1.5)</h2>
+                    <h2 class="text-lg font-bold text-white">AI Active Retrieval Partner (Gemini API)</h2>
                     <p class="text-xs text-slate-400">Asisten AI yang diprogram khusus untuk menguji celah ingatan dan membedah konsep sulit.</p>
                 </div>
                 <div class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800 px-3 py-1 rounded-full font-mono">
@@ -418,7 +418,7 @@
         // Global App State Schema
         const DEFAULT_STATE = {
             activeDomain: 'elektro',
-            geminiApiKey: 'ISI_API_KEY_KAMU_DI_SINI', // <- PASTE API KEY GEMINI KAMU DI SINI
+            geminiApiKey: '',
             domains: {
                 elektro: {
                     title: "Teknik Elektro UMM",
@@ -746,81 +746,57 @@
             }
         }
 
-        // Pemanggilan Gemini API Stabil (Model gemini-1.5-flash)
         // Pemanggilan Gemini API dengan Auto-Fallback Multi-Model
-async function callGemini(promptText) {
-    const cleanApiKey = (appState.geminiApiKey || DEFAULT_STATE.geminiApiKey || '').trim();
-    if(!cleanApiKey || cleanApiKey === 'ISI_API_KEY_KAMU_DI_SINI') {
-        alert("API Key Gemini belum terpasang! Buka menu Pengaturan (⚙️) atau masukkan kunci Anda terlebih dahulu.");
-        return null;
-    }
-
-    // Urutan model yang akan dicoba secara otomatis jika model sebelumnya 404
-    const modelCandidates = [
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-flash'
-    ];
-
-    for (const model of modelCandidates) {
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanApiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }]
-                })
-            });
-
-            const data = await res.json();
-            
-            // Jika model 404 (tidak tersedia), lewati dan coba model berikutnya
-            if (res.status === 404) {
-                console.warn(`Model ${model} mengembalikan 404, beralih ke model berikutnya...`);
-                continue;
-            }
-
-            if (!res.ok || data.error) {
-                if (res.status !== 404) {
-                    alert(`Error Gemini API (${data.error?.code || res.status}): ${data.error?.message || 'API Key tidak valid'}`);
-                    return null;
-                }
-                continue;
-            }
-
-            if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-                return data.candidates[0].content.parts[0].text;
-            }
-        } catch(e) {
-            console.error(`Gagal menghubungkan model ${model}:`, e);
-        }
-    }
-
-    alert("Tidak dapat menemukan model Gemini yang aktif. Pastikan API key Anda valid di Google AI Studio.");
-    return null;
-}
-
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanApiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: promptText }] }]
-                    })
-                });
-                const data = await res.json();
-                
-                if (!res.ok || data.error) {
-                    console.error("Gemini Error:", data.error);
-                    alert(`Error Gemini API (${data.error?.code || res.status}): ${data.error?.message || 'API Key tidak valid'}`);
-                    return null;
-                }
-                return data.candidates[0].content.parts[0].text;
-            } catch(e) {
-                alert("Gagal koneksi ke Gemini API. Periksa jaringan internet Anda.");
+        async function callGemini(promptText) {
+            const cleanApiKey = (appState.geminiApiKey || DEFAULT_STATE.geminiApiKey || '').trim();
+            if(!cleanApiKey || cleanApiKey === 'ISI_API_KEY_KAMU_DI_SINI') {
+                alert("API Key Gemini belum terpasang! Buka menu Pengaturan (⚙️) di kanan atas untuk memasukkan API Key gratis Anda.");
                 return null;
             }
+
+            // Urutan model yang dicoba secara otomatis jika model sebelumnya 404
+            const modelCandidates = [
+                'gemini-2.5-flash',
+                'gemini-2.0-flash',
+                'gemini-1.5-flash-latest',
+                'gemini-1.5-flash'
+            ];
+
+            for (const model of modelCandidates) {
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanApiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: promptText }] }]
+                        })
+                    });
+
+                    const data = await res.json();
+                    
+                    if (res.status === 404) {
+                        console.warn(`Model ${model} tidak ditemukan (404), mencoba model berikutnya...`);
+                        continue;
+                    }
+
+                    if (!res.ok || data.error) {
+                        if (res.status !== 404) {
+                            alert(`Error Gemini API (${data.error?.code || res.status}): ${data.error?.message || 'API Key tidak valid'}`);
+                            return null;
+                        }
+                        continue;
+                    }
+
+                    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                } catch(e) {
+                    console.error(`Gagal menghubungkan model ${model}:`, e);
+                }
+            }
+
+            alert("Tidak dapat menemukan model Gemini yang aktif. Pastikan API key Anda valid di Google AI Studio.");
+            return null;
         }
 
         async function aiGenerateAuditBreakdown() {
