@@ -389,7 +389,7 @@
             <div class="space-y-4 text-xs">
                 <div>
                     <label class="block text-slate-300 font-semibold mb-1">Google Gemini API Key:</label>
-                    <input type="password" id="cfg-gemini-key" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="AIZASy...">
+                    <input type="password" id="cfg-gemini-key" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="AQ.Ab8RN6...">
                     <p class="text-slate-500 text-[10px] mt-1">Dapatkan API Key gratis di <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 hover:underline">Google AI Studio</a> untuk mengaktifkan pembuat soal & breakdown otomatis.</p>
                 </div>
 
@@ -746,57 +746,42 @@
             }
         }
 
-        // Pemanggilan Gemini API dengan Auto-Fallback Multi-Model
+        // Pemanggilan Gemini API Resmi (gemini-1.5-flash)
         async function callGemini(promptText) {
             const cleanApiKey = (appState.geminiApiKey || DEFAULT_STATE.geminiApiKey || '').trim();
             if(!cleanApiKey || cleanApiKey === 'ISI_API_KEY_KAMU_DI_SINI') {
-                alert("API Key Gemini belum terpasang! Buka menu Pengaturan (⚙️) di kanan atas untuk memasukkan API Key gratis Anda.");
+                alert("API Key Gemini belum terpasang! Buka menu Pengaturan (⚙️) di kanan atas.");
                 return null;
             }
 
-            // Urutan model yang dicoba secara otomatis jika model sebelumnya 404
-            const modelCandidates = [
-                'gemini-2.5-flash',
-                'gemini-2.0-flash',
-                'gemini-1.5-flash-latest',
-                'gemini-1.5-flash'
-            ];
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptText }] }]
+                    })
+                });
 
-            for (const model of modelCandidates) {
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanApiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: promptText }] }]
-                        })
-                    });
+                const data = await res.json();
 
-                    const data = await res.json();
-                    
-                    if (res.status === 404) {
-                        console.warn(`Model ${model} tidak ditemukan (404), mencoba model berikutnya...`);
-                        continue;
-                    }
-
-                    if (!res.ok || data.error) {
-                        if (res.status !== 404) {
-                            alert(`Error Gemini API (${data.error?.code || res.status}): ${data.error?.message || 'API Key tidak valid'}`);
-                            return null;
-                        }
-                        continue;
-                    }
-
-                    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-                        return data.candidates[0].content.parts[0].text;
-                    }
-                } catch(e) {
-                    console.error(`Gagal menghubungkan model ${model}:`, e);
+                if (!res.ok || data.error) {
+                    console.error("Gemini API Error Detail:", data.error);
+                    alert(`Error Gemini API (${data.error?.code || res.status}): ${data.error?.message || 'API Key tidak valid'}`);
+                    return null;
                 }
-            }
 
-            alert("Tidak dapat menemukan model Gemini yang aktif. Pastikan API key Anda valid di Google AI Studio.");
-            return null;
+                if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    alert("Respons AI kosong atau terblokir filter keamanan.");
+                    return null;
+                }
+            } catch(e) {
+                console.error("Network Error:", e);
+                alert("Gagal koneksi ke Gemini API. Periksa jaringan internet Anda.");
+                return null;
+            }
         }
 
         async function aiGenerateAuditBreakdown() {
