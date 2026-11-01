@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MasterMind Brain OS v2.0 - Active Learning Engine</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="brain-circuit" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none text-white tracking-wide">MasterMind <span class="text-indigo-400">Brain OS</span> <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-700 px-1.5 py-0.5 rounded font-mono">v2.0 AI Integrated</span></h1>
+                    <p class="text-xs text-slate-400">Patented Kinesthetic-Retrieval System</p>
+                </div>
+            </div>
+
+            <!-- Domain Switcher Dropdown -->
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:inline">Active Domain:</span>
+                <select id="domainSelector" onchange="switchDomain(this.value)" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <!-- Populated dynamically -->
+                </select>
+                <button onclick="openConfigModal()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg border border-slate-700 transition" title="Pengaturan AI API Key & Backup">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex border-t border-slate-800/80 overflow-x-auto custom-scrollbar px-4 max-w-7xl mx-auto">
+            <button onclick="setActiveTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+            </button>
+            <button onclick="setActiveTab('audit')" id="tab-audit" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="list-checks" class="w-4 h-4"></i> The Audit Method
+            </button>
+            <button onclick="setActiveTab('recall')" id="tab-recall" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="zap" class="w-4 h-4"></i> Active Recall (1-Soal-1-Cek)
+            </button>
+            <button onclick="setActiveTab('blurting')" id="tab-blurting" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="timer" class="w-4 h-4"></i> Blurting & Feynman
+            </button>
+            <button onclick="setActiveTab('ai-tutor')" id="tab-ai-tutor" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="bot" class="w-4 h-4"></i> AI Active Partner
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- TAB 1: DASHBOARD -->
+        <section id="sec-dashboard" class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div class="flex justify-between text-slate-400 text-xs font-semibold mb-1">
+                        <span>TOTAL AUDIT ITEMS</span>
+                        <i data-lucide="target" class="w-4 h-4 text-indigo-400"></i>
+                    </div>
+                    <div id="dash-total-items" class="text-2xl font-bold text-white">0 Sub-Bab</div>
+                    <p class="text-xs text-slate-500 mt-1">Item dipetakan dalam domain</p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div class="flex justify-between text-slate-400 text-xs font-semibold mb-1">
+                        <span>MASTERY RATIO</span>
+                        <i data-lucide="award" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                    <div id="dash-mastery-score" class="text-2xl font-bold text-emerald-400">0%</div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="dash-mastery-bar" class="bg-emerald-500 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div class="flex justify-between text-slate-400 text-xs font-semibold mb-1">
+                        <span>HIGH FRICTION (🔴 MERAH)</span>
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
+                    </div>
+                    <div id="dash-red-count" class="text-2xl font-bold text-rose-400">0 Item</div>
+                    <p class="text-xs text-slate-500 mt-1">Alokasi waktu utama (70%)</p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div class="flex justify-between text-slate-400 text-xs font-semibold mb-1">
+                        <span>RECALL FLASHCARDS</span>
+                        <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i>
+                    </div>
+                    <div id="dash-recalls-count" class="text-2xl font-bold text-cyan-400">0 Kartu</div>
+                    <p class="text-xs text-slate-500 mt-1">Tersedia untuk pengujian ingatan</p>
+                </div>
+            </div>
+
+            <!-- Priority & Protocol -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-base text-white flex items-center gap-2">
+                            <i data-lucide="compass" class="w-5 h-5 text-indigo-400"></i>
+                            Fokus Utama Hari Ini (Urutan Status Audit)
+                        </h3>
+                        <button onclick="setActiveTab('audit')" class="text-xs text-indigo-400 hover:underline">Lihat Semua Audit ➔</button>
+                    </div>
+                    <div id="dash-priority-list" class="space-y-3">
+                        <!-- Dynamic priority items -->
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-3">
+                    <h3 class="font-bold text-base text-white flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                        Protokol Sistem Paten
+                    </h3>
+                    <ul class="text-xs text-slate-300 space-y-2.5">
+                        <li class="flex items-start gap-2">
+                            <span class="bg-indigo-950 text-indigo-400 px-1.5 py-0.5 rounded font-mono font-bold">1</span>
+                            <span><strong>Kertas HVS + Timer 45m:</strong> Dilarang membaca pasif. Coretkan logika dari ingatan.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="bg-indigo-950 text-indigo-400 px-1.5 py-0.5 rounded font-mono font-bold">2</span>
+                            <span><strong>1-Soal-1-Cek:</strong> Cek kunci instan <10 detik setelah 1 soal selesai.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="bg-indigo-950 text-indigo-400 px-1.5 py-0.5 rounded font-mono font-bold">3</span>
+                            <span><strong>Audit Up-Rating:</strong> Ubah status 🔴 ➔ 🟡 ➔ 🟢 setelah verifikasi hasil.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: THE AUDIT METHOD -->
+        <section id="sec-audit" class="hidden space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Traffic Light Audit System</h2>
+                    <p class="text-xs text-slate-400">Petakan celah ingatan secara rinci untuk membuang ilusi kompetensi.</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="aiGenerateAuditBreakdown()" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Auto-Breakdown Sub-Bab via AI
+                    </button>
+                    <button onclick="addNewAuditItemPrompt()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Tambah Manual
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto bg-slate-900 border border-slate-800 rounded-xl">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-950 text-xs text-slate-400 uppercase border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">Topik / Sub-Bab</th>
+                            <th class="p-3">Status Audit</th>
+                            <th class="p-3">Terakhir Di-Review</th>
+                            <th class="p-3">Aksi Rapid Retrieval</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody" class="divide-y divide-slate-800">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 3: ACTIVE RECALL (1-SOAL-1-CEK) -->
+        <section id="sec-recall" class="hidden space-y-6">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">1-Soal-1-Cek Flashcard Engine</h2>
+                    <p class="text-xs text-slate-400">Uji ingatan aktif dengan eksekusi instan dan umpan balik seketika.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="aiGenerateFlashcardsPrompt()" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Auto-Generate Soal via AI
+                    </button>
+                    <button onclick="addNewFlashcardPrompt()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Tambah Manual
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Recall Interactive Card Container -->
+            <div id="recall-card-container" class="max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl relative">
+                <!-- Card Header Navigation & Indicator -->
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span id="recall-card-category" class="bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs font-mono font-bold px-2.5 py-1 rounded-full">Kategori</span>
+                        <span id="recall-card-status" class="text-xs px-2 py-0.5 rounded font-semibold">Status</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="recall-card-counter" class="text-xs text-slate-400 font-mono">Kartu 0 dari 0</span>
+                        <div class="flex gap-1">
+                            <button onclick="prevRecallCard()" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300" title="Kartu Sebelumnya"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                            <button onclick="nextRecallCard()" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300" title="Kartu Selanjutnya"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Box -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Pertanyaan / Soal Active Recall:</h4>
+                    <div id="recall-card-question" class="text-base text-white font-medium leading-relaxed min-h-[60px]">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- User Input Area -->
+                <div class="space-y-3 pt-2">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Coretan Logika / Rumus Singkat (Sebelum Cek Kunci):</label>
+                    <textarea id="recall-user-input" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ketik ringkasan ingatan Anda atau selesaikan di kertas HVS..."></textarea>
+                    
+                    <button id="btn-show-answer" onclick="revealRecallAnswer()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20">
+                        <i data-lucide="eye" class="w-4 h-4"></i> Cek Kunci Jawaban Seketika (1-Soal-1-Cek)
+                    </button>
+                </div>
+
+                <!-- Answer Reveal Area -->
+                <div id="recall-answer-area" class="hidden border-t border-slate-800 pt-4 space-y-4">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <h4 class="text-xs font-bold uppercase text-emerald-400 tracking-wider">Kunci Jawaban Resmi / Solusi:</h4>
+                        <div id="recall-card-answer" class="text-sm text-slate-200 leading-relaxed font-mono">
+                            <!-- Answer text -->
+                        </div>
+                    </div>
+
+                    <!-- Spaced Repetition Rating Buttons -->
+                    <div>
+                        <p class="text-xs text-center text-slate-400 mb-2 font-medium">Berapa tingkat friksi kognitif Anda saat mengingat tadi?</p>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="rateRecall('hard')" class="bg-rose-950/50 hover:bg-rose-900/60 border border-rose-800/80 text-rose-300 py-2 rounded-xl text-xs font-bold flex flex-col items-center">
+                                <span>🔴 Sulit / Salah</span>
+                                <span class="text-[10px] font-normal opacity-80">Repeat H+1</span>
+                            </button>
+                            <button onclick="rateRecall('medium')" class="bg-amber-950/50 hover:bg-amber-900/60 border border-amber-800/80 text-amber-300 py-2 rounded-xl text-xs font-bold flex flex-col items-center">
+                                <span>🟡 Lambat / Hint</span>
+                                <span class="text-[10px] font-normal opacity-80">Repeat H+3</span>
+                            </button>
+                            <button onclick="rateRecall('easy')" class="bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/80 text-emerald-300 py-2 rounded-xl text-xs font-bold flex flex-col items-center">
+                                <span>🟢 Lancar Instan</span>
+                                <span class="text-[10px] font-normal opacity-80">Repeat H+7</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Current Card -->
+                <div class="flex justify-end pt-2">
+                    <button onclick="deleteCurrentFlashcard()" class="text-[11px] text-rose-400 hover:underline flex items-center gap-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus Kartu Ini
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: BLURTING & FEYNMAN ARENA -->
+        <section id="sec-blurting" class="hidden space-y-6">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Timed Blurting & Feynman Arena</h2>
+                    <p class="text-xs text-slate-400">Tuliskan seluruh konsep dari ingatan tanpa acuan di bawah tekanan timer.</p>
+                </div>
+
+                <div class="flex items-center gap-3 flex-wrap">
+                    <button onclick="aiGenerateBlurtingRefPrompt()" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Buat Acuan Materi via AI
+                    </button>
+                    <div class="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 text-xs font-mono">
+                        <span id="timer-display" class="px-3 py-1 font-bold text-indigo-400 text-base">05:00</span>
+                    </div>
+                    <button id="btn-timer-toggle" onclick="toggleBlurtingTimer()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">
+                        Start Timer
+                    </button>
+                    <button onclick="resetBlurtingTimer(5)" class="bg-slate-800 text-slate-300 px-2.5 py-1.5 rounded-lg text-xs">5m</button>
+                    <button onclick="resetBlurtingTimer(10)" class="bg-slate-800 text-slate-300 px-2.5 py-1.5 rounded-lg text-xs">10m</button>
+                </div>
+            </div>
+
+            <!-- Dual Pane Blurting Sandbox -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Pane: Active Blurting Area -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="edit-3" class="w-4 h-4 text-indigo-400"></i>
+                            Arena Pengetikan Ingatan (Blurting)
+                        </h3>
+                        <span class="text-xs text-slate-500 font-mono" id="blurting-word-count">0 kata</span>
+                    </div>
+                    <textarea id="blurting-input" oninput="updateWordCount()" class="flex-1 min-h-[320px] w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none leading-relaxed font-sans" placeholder="Ketikkan semua definisi, rumus, alur logika, sintaks, atau persamaan yang Anda ingat tanpa melihat catatan..."></textarea>
+                </div>
+
+                <!-- Right Pane: Reference / Official Key Comparison -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-400"></i>
+                            Kunci Acuan / Dokumen Pembanding
+                        </h3>
+                        <button onclick="toggleReferenceVisibility()" id="btn-toggle-ref" class="text-xs text-indigo-400 hover:underline font-semibold">
+                            Buka Kunci Acuan
+                        </button>
+                    </div>
+                    <div id="blurting-reference-box" class="flex-1 min-h-[320px] w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-300 overflow-y-auto leading-relaxed hidden">
+                        <p class="italic text-xs text-slate-500 mb-2">[Kunci Acuan Resmi Topik Ini]:</p>
+                        <div id="blurting-ref-content">
+                            <!-- Ref content -->
+                        </div>
+                    </div>
+                    <div id="blurting-reference-placeholder" class="flex-1 min-h-[320px] w-full bg-slate-950/50 border border-dashed border-slate-800 rounded-xl p-4 flex items-center justify-center text-xs text-slate-500 text-center">
+                        Kunci Acuan tersembunyi selama sesi blurting berlangsung untuk membuang ilusi kompetensi.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: AI ACTIVE PARTNER & RESEARCH -->
+        <section id="sec-ai-tutor" class="hidden space-y-6">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">AI Active Retrieval Partner (Gemini 2.5)</h2>
+                    <p class="text-xs text-slate-400">Asisten AI yang diprogram khusus untuk menguji celah ingatan dan membedah konsep sulit.</p>
+                </div>
+                <div class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800 px-3 py-1 rounded-full font-mono">
+                    System Mode: Active Examiner
+                </div>
+            </div>
+
+            <!-- Chat Console -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4 flex flex-col h-[520px]">
+                <div id="ai-chat-history" class="flex-1 overflow-y-auto space-y-3 p-2 custom-scrollbar">
+                    <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 max-w-2xl text-xs leading-relaxed space-y-1">
+                        <span class="font-bold text-indigo-400">AI Examiner:</span>
+                        <p>Saya adalah mitra belajar aktif Anda. Tuliskan topik atau rumus yang sedang Anda pelajari (misal: <em>"Turunan Sinyal Kalkulus"</em> atau <em>"Macroeconomic Liquidity Rate"</em>). Saya akan membedah logikasinya dan memberikan 1 soal uji seketika!</p>
+                    </div>
+                </div>
+
+                <!-- Input Box -->
+                <div class="flex gap-2 border-t border-slate-800 pt-3">
+                    <input type="text" id="ai-user-prompt" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Tanyakan konsep atau minta AI uji pemahaman Anda..." onkeydown="if(event.key === 'Enter') sendAiQuery()">
+                    <button onclick="sendAiQuery()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-1.5 shadow">
+                        <i data-lucide="send" class="w-4 h-4"></i> Kirim
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CONFIG MODAL (API Key & Backup JSON) -->
+    <div id="configModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-base">Pengaturan AI API Key & Data Backup</h3>
+                <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Google Gemini API Key:</label>
+                    <input type="password" id="cfg-gemini-key" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="AIZASy...">
+                    <p class="text-slate-500 text-[10px] mt-1">Dapatkan API Key gratis di <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 hover:underline">Google AI Studio</a> untuk mengaktifkan pembuat soal & breakdown otomatis.</p>
+                </div>
+
+                <div class="border-t border-slate-800 pt-3 space-y-2">
+                    <label class="block text-slate-300 font-semibold">Backup & Restore Database (JSON):</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="exportDataJSON()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg border border-slate-700 font-semibold text-center">
+                            Export Data
+                        </button>
+                        <button onclick="document.getElementById('importFileInput').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg border border-slate-700 font-semibold text-center">
+                            Import Data
+                        </button>
+                        <input type="file" id="importFileInput" onchange="importDataJSON(event)" class="hidden" accept=".json">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="saveConfigModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-xl text-xs">
+                Simpan & Tutup
+            </button>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Code -->
+    <script>
+        // Global App State Schema
+        const DEFAULT_STATE = {
+            activeDomain: 'elektro',
+            geminiApiKey: '',
+            domains: {
+                elektro: {
+                    title: "Teknik Elektro UMM",
+                    audit: [
+                        { id: 'el-1', topic: 'Kalkulus 1: Turunan & Integral Sinyal i(t)=C dv/dt', status: 'red', lastReview: '2026-10-30' },
+                        { id: 'el-2', topic: 'Fisika 1: Hukum Coulomb & Medan Listrik Gauss', status: 'yellow', lastReview: '2026-10-29' },
+                        { id: 'el-3', topic: 'Algoritma C: Memory Swap Pointer & Struct', status: 'red', lastReview: '2026-11-01' },
+                        { id: 'el-4', topic: 'Pengantar TE: Hukum Kirchhoff KVL/KCL & Daya', status: 'green', lastReview: '2026-10-28' }
+                    ],
+                    flashcards: [
+                        { id: 'fc-1', cat: 'Kalkulus 1', q: 'Tuliskan formula hubungan arus $i(t)$ dan tegangan $v(t)$ pada kapasitor!', a: '$i(t) = C \\frac{dv(t)}{dt}$', status: 'red' },
+                        { id: 'fc-2', cat: 'Algoritma C', q: 'Bagaimana sintaks fungsi penukaran variabel dengan pointer Tukar(int *a, int *b)?', a: 'void Tukar(int *a, int *b) { int temp = *a; *a = *b; *b = temp; }', status: 'red' },
+                        { id: 'fc-3', cat: 'Fisika 1', q: 'Tuliskan persamaan Hukum Gauss untuk medan listrik tertutup!', a: '$\\oint E \\cdot dA = \\frac{Q_{enc}}{\\epsilon_0}$', status: 'yellow' }
+                    ],
+                    blurtingRef: "Konsep Utama Elektro: Hukum Ohm V=I*R. KVL: Sum V = 0 pada loop tertutup. Kapasitor i=C(dv/dt). Induktor v=L(di/dt). P-N Junction membentuk barrier potensial."
+                },
+                bindonesia: {
+                    title: "Bahasa Indonesia UTS",
+                    audit: [
+                        { id: 'bi-1', topic: 'Pedoman EYD V: Penulisan di/ke (Kata Depan vs Awalan)', status: 'green', lastReview: '2026-11-01' },
+                        { id: 'bi-2', topic: 'Syarat Kalimat Efektif & Keparalelan Imbuhan', status: 'yellow', lastReview: '2026-10-31' },
+                        { id: 'bi-3', topic: 'Bab 1 Pendahuluan KTI: Das Sollen vs Das Sein', status: 'red', lastReview: '2026-10-30' }
+                    ],
+                    flashcards: [
+                        { id: 'bi-fc1', cat: 'EYD V', q: 'Manakah bentuk baku yang benar: "sistem" atau "sistim", "praktik" atau "praktek"?', a: 'Bentuk baku yang benar adalah "sistem" dan "praktik".', status: 'green' }
+                    ],
+                    blurtingRef: "Kalimat efektif harus memenuhi 4 syarat: Kesatuan Subjek-Predikat, Keparalelan bentuk imbuhan, Kehematan kata (tanpa pleonisme), dan Kelogisan penalaran."
+                },
+                finance: {
+                    title: "Analisis Pasar Finance",
+                    audit: [
+                        { id: 'fin-1', topic: 'Macroeconomics: Dampak Suku Bunga Fed & Likuiditas', status: 'red', lastReview: '2026-10-25' },
+                        { id: 'fin-2', topic: 'Technical Analysis: Structure Break & Liquidity Sweep', status: 'yellow', lastReview: '2026-10-27' }
+                    ],
+                    flashcards: [
+                        { id: 'fin-fc1', cat: 'Risk Mgmt', q: 'Bagaimana rumus menghitung Position Size berdasarkan risk % dari ekuitas?', a: 'Position Size = (Total Ekuitas * % Risiko) / (Entry Price - Stop Loss Price)', status: 'yellow' }
+                    ],
+                    blurtingRef: "Risk Management Utama: Jangan pernah merisikokan lebih dari 1-2% dari total ekuitas per posisi transaksi."
+                }
+            }
+        };
+
+        let appState = JSON.parse(localStorage.getItem('mastermind_state')) || DEFAULT_STATE;
+        let currentRecallIndex = 0;
+        let blurtingTimerInterval = null;
+        let blurtingSecondsLeft = 300;
+
+        function saveState() {
+            localStorage.setItem('mastermind_state', JSON.stringify(appState));
+            renderDashboard();
+        }
+
+        function setActiveTab(tabName) {
+            document.querySelectorAll('nav .tab-btn').forEach(btn => {
+                btn.classList.remove('border-indigo-500', 'text-indigo-400');
+                btn.classList.add('border-transparent', 'text-slate-400');
+            });
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            const activeSec = document.getElementById(`sec-${tabName}`);
+            if(activeBtn) {
+                activeBtn.classList.add('border-indigo-500', 'text-indigo-400');
+                activeBtn.classList.remove('border-transparent', 'text-slate-400');
+            }
+            if(activeSec) activeSec.classList.remove('hidden');
+
+            if(tabName === 'dashboard') renderDashboard();
+            if(tabName === 'audit') renderAuditTable();
+            if(tabName === 'recall') loadRecallCard();
+            if(tabName === 'blurting') renderBlurtingRef();
+        }
+
+        function switchDomain(domainKey) {
+            if(domainKey === 'custom') {
+                const name = prompt("Masukkan nama domain/topik belajar baru:");
+                if(name) {
+                    const key = 'custom_' + Date.now();
+                    appState.domains[key] = {
+                        title: name,
+                        audit: [],
+                        flashcards: [],
+                        blurtingRef: "Masukkan acuan materi untuk topik ini..."
+                    };
+                    appState.activeDomain = key;
+                    updateDomainSelector();
+                    saveState();
+                } else {
+                    document.getElementById('domainSelector').value = appState.activeDomain;
+                }
+                return;
+            }
+            appState.activeDomain = domainKey;
+            currentRecallIndex = 0;
+            saveState();
+            renderDashboard();
+        }
+
+        function updateDomainSelector() {
+            const selector = document.getElementById('domainSelector');
+            selector.innerHTML = '';
+            for(let k in appState.domains) {
+                const opt = document.createElement('option');
+                opt.value = k;
+                opt.innerText = appState.domains[k].title;
+                if(k === appState.activeDomain) opt.selected = true;
+                selector.appendChild(opt);
+            }
+            const addOpt = document.createElement('option');
+            addOpt.value = 'custom';
+            addOpt.innerText = '+ Tambah Domain Baru...';
+            selector.appendChild(addOpt);
+        }
+
+        function renderDashboard() {
+            const domain = appState.domains[appState.activeDomain];
+            if(!domain) return;
+
+            const total = domain.audit.length;
+            const green = domain.audit.filter(i => i.status === 'green').length;
+            const red = domain.audit.filter(i => i.status === 'red').length;
+            const score = total > 0 ? Math.round((green / total) * 100) : 0;
+
+            document.getElementById('dash-total-items').innerText = `${total} Sub-Bab`;
+            document.getElementById('dash-mastery-score').innerText = `${score}%`;
+            document.getElementById('dash-mastery-bar').style.width = `${score}%`;
+            document.getElementById('dash-red-count').innerText = `${red} Item`;
+            document.getElementById('dash-recalls-count').innerText = `${domain.flashcards.length} Kartu`;
+
+            const listEl = document.getElementById('dash-priority-list');
+            listEl.innerHTML = '';
+            const priorityItems = [...domain.audit].sort((a,b) => (a.status==='red'?-1:1));
+            
+            if(priorityItems.length === 0) {
+                listEl.innerHTML = '<p class="text-xs text-slate-500 italic">Belum ada item audit. Klik tab "The Audit Method" atau gunakan Auto-Breakdown AI.</p>';
+            } else {
+                priorityItems.slice(0, 4).forEach(item => {
+                    const badgeColor = item.status === 'red' ? 'bg-rose-950 text-rose-400 border-rose-800' : (item.status==='yellow'?'bg-amber-950 text-amber-400 border-amber-800':'bg-emerald-950 text-emerald-400 border-emerald-800');
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs';
+                    div.innerHTML = `
+                        <span class="text-slate-200 font-medium">${item.topic}</span>
+                        <span class="px-2 py-0.5 rounded border uppercase text-[10px] font-bold ${badgeColor}">${item.status}</span>
+                    `;
+                    listEl.appendChild(div);
+                });
+            }
+        }
+
+        function renderAuditTable() {
+            const domain = appState.domains[appState.activeDomain];
+            const tbody = document.getElementById('auditTableBody');
+            tbody.innerHTML = '';
+
+            if(domain.audit.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-xs text-slate-500 italic">Belum ada sub-bab audit. Klik "✨ Auto-Breakdown Sub-Bab via AI" untuk memuat daftar otomatis!</td></tr>`;
+                return;
+            }
+
+            domain.audit.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800 hover:bg-slate-950/40';
+                const badgeClass = item.status === 'red' ? 'bg-rose-950 text-rose-400 border-rose-800' : (item.status==='yellow'?'bg-amber-950 text-amber-400 border-amber-800':'bg-emerald-950 text-emerald-400 border-emerald-800');
+                
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-slate-100">${item.topic}</td>
+                    <td class="p-3">
+                        <select onchange="updateAuditStatus(${index}, this.value)" class="bg-slate-950 border border-slate-800 text-xs rounded px-2 py-1 font-bold ${badgeClass}">
+                            <option value="red" ${item.status==='red'?'selected':''}>🔴 Merah (High Friction)</option>
+                            <option value="yellow" ${item.status==='yellow'?'selected':''}>🟡 Kuning (Moderate)</option>
+                            <option value="green" ${item.status==='green'?'selected':''}>🟢 Hijau (Mastered)</option>
+                        </select>
+                    </td>
+                    <td class="p-3 text-xs text-slate-400">${item.lastReview || 'Hari ini'}</td>
+                    <td class="p-3 flex items-center gap-2">
+                        <button onclick="triggerRecallForAudit('${item.topic.replace(/'/g, "\\'")}')" class="text-xs bg-indigo-950 text-indigo-300 hover:bg-indigo-900 border border-indigo-800 px-2.5 py-1 rounded font-semibold transition flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3 h-3"></i> Uji Recall
+                        </button>
+                        <button onclick="deleteAuditItem(${index})" class="text-xs text-rose-500 hover:text-rose-400 p-1" title="Hapus Sub-Bab"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // FIXED BUG 1: Trigger Recall For Audit Item
+        function triggerRecallForAudit(topicName) {
+            const domain = appState.domains[appState.activeDomain];
+            // Find index of existing flashcard matching topic
+            let foundIdx = domain.flashcards.findIndex(fc => 
+                fc.cat.toLowerCase().includes(topicName.toLowerCase()) || 
+                topicName.toLowerCase().includes(fc.cat.toLowerCase())
+            );
+
+            if(foundIdx !== -1) {
+                currentRecallIndex = foundIdx;
+            }
+            setActiveTab('recall');
+            
+            if(foundIdx === -1 && confirm(`Belum ada kartu Active Recall khusus untuk "${topicName}". Apakah Anda ingin Gemini AI membuatkan soalnya secara otomatis?`)) {
+                aiGenerateFlashcardsPrompt(topicName);
+            }
+        }
+
+        function updateAuditStatus(index, newStatus) {
+            appState.domains[appState.activeDomain].audit[index].status = newStatus;
+            appState.domains[appState.activeDomain].audit[index].lastReview = new Date().toISOString().split('T')[0];
+            saveState();
+            renderAuditTable();
+        }
+
+        function deleteAuditItem(index) {
+            appState.domains[appState.activeDomain].audit.splice(index, 1);
+            saveState();
+            renderAuditTable();
+        }
+
+        function addNewAuditItemPrompt() {
+            const topic = prompt("Masukkan nama sub-bab / topik materi baru:");
+            if(topic) {
+                appState.domains[appState.activeDomain].audit.push({
+                    id: 'aud_' + Date.now(),
+                    topic: topic,
+                    status: 'red',
+                    lastReview: new Date().toISOString().split('T')[0]
+                });
+                saveState();
+                renderAuditTable();
+            }
+        }
+
+        // FIXED BUG 2: Active Recall Flashcard Navigation & State
+        function loadRecallCard() {
+            const domain = appState.domains[appState.activeDomain];
+            const cards = domain.flashcards;
+            
+            if(!cards || cards.length === 0) {
+                document.getElementById('recall-card-question').innerHTML = '<span class="text-slate-500 italic">Belum ada kartu soal. Klik "✨ Auto-Generate Soal via AI" atau "Tambah Manual".</span>';
+                document.getElementById('recall-card-category').innerText = 'Kategori';
+                document.getElementById('recall-card-counter').innerText = 'Kartu 0 dari 0';
+                document.getElementById('recall-card-answer').innerHTML = '';
+                document.getElementById('recall-answer-area').classList.add('hidden');
+                return;
+            }
+
+            if(currentRecallIndex >= cards.length) currentRecallIndex = cards.length - 1;
+            if(currentRecallIndex < 0) currentRecallIndex = 0;
+
+            const card = cards[currentRecallIndex];
+            document.getElementById('recall-card-counter').innerText = `Kartu ${currentRecallIndex + 1} dari ${cards.length}`;
+            document.getElementById('recall-card-category').innerText = card.cat || 'Umum';
+            document.getElementById('recall-card-question').innerHTML = card.q;
+            document.getElementById('recall-card-answer').innerHTML = card.a;
+            document.getElementById('recall-user-input').value = '';
+            document.getElementById('recall-answer-area').classList.add('hidden');
+
+            const statusBadge = document.getElementById('recall-card-status');
+            statusBadge.innerText = (card.status || 'RED').toUpperCase();
+            statusBadge.className = `text-xs px-2 py-0.5 rounded font-semibold ${card.status==='green'?'bg-emerald-950 text-emerald-400':(card.status==='yellow'?'bg-amber-950 text-amber-400':'bg-rose-950 text-rose-400')}`;
+
+            // Render Math equations if KaTeX auto-render is loaded
+            if(window.renderMathInElement) {
+                try {
+                    renderMathInElement(document.getElementById('recall-card-container'), {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false}
+                        ]
+                    });
+                } catch(e){}
+            }
+        }
+
+        function nextRecallCard() {
+            const cards = appState.domains[appState.activeDomain].flashcards;
+            if(cards && cards.length > 0) {
+                currentRecallIndex = (currentRecallIndex + 1) % cards.length;
+                loadRecallCard();
+            }
+        }
+
+        function prevRecallCard() {
+            const cards = appState.domains[appState.activeDomain].flashcards;
+            if(cards && cards.length > 0) {
+                currentRecallIndex = (currentRecallIndex - 1 + cards.length) % cards.length;
+                loadRecallCard();
+            }
+        }
+
+        function deleteCurrentFlashcard() {
+            const cards = appState.domains[appState.activeDomain].flashcards;
+            if(cards && cards.length > 0) {
+                cards.splice(currentRecallIndex, 1);
+                if(currentRecallIndex >= cards.length) currentRecallIndex = cards.length - 1;
+                saveState();
+                loadRecallCard();
+            }
+        }
+
+        function revealRecallAnswer() {
+            document.getElementById('recall-answer-area').classList.remove('hidden');
+        }
+
+        function rateRecall(rating) {
+            const domain = appState.domains[appState.activeDomain];
+            if(domain.flashcards[currentRecallIndex]) {
+                domain.flashcards[currentRecallIndex].status = rating === 'easy' ? 'green' : (rating === 'medium' ? 'yellow' : 'red');
+            }
+            saveState();
+            nextRecallCard();
+        }
+
+        function addNewFlashcardPrompt() {
+            const cat = prompt("Masukkan Kategori/Matkul:");
+            const q = prompt("Masukkan Pertanyaan / Soal Latihan:");
+            const a = prompt("Masukkan Kunci Jawaban Resmi:");
+            if(q && a) {
+                appState.domains[appState.activeDomain].flashcards.push({
+                    id: 'fc_' + Date.now(),
+                    cat: cat || 'General',
+                    q: q,
+                    a: a,
+                    status: 'red'
+                });
+                currentRecallIndex = appState.domains[appState.activeDomain].flashcards.length - 1;
+                saveState();
+                loadRecallCard();
+            }
+        }
+
+        // Gemini AI API Utility
+        async function callGemini(promptText) {
+            if(!appState.geminiApiKey) {
+                alert("API Key Gemini belum terpasang! Silakan buka menu Pengaturan (⚙️) di kanan atas untuk memasukkan Gemini API Key gratis Anda.");
+                return null;
+            }
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${appState.geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptText }] }]
+                    })
+                });
+                const data = await res.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch(e) {
+                alert("Gagal koneksi ke Gemini AI API. Periksa koneksi internet atau API key Anda.");
+                return null;
+            }
+        }
+
+        // GEMINI AI INTEGRATIONS
+        async function aiGenerateAuditBreakdown() {
+            const domainTitle = appState.domains[appState.activeDomain].title;
+            const topic = prompt(`Masukkan topik spesifik yang ingin di-breakdown untuk domain "${domainTitle}":`, domainTitle);
+            if(!topic) return;
+
+            const promptText = `Bagi topik pembelajaran "${topic}" menjadi 5 sub-bab teknis yang paling krusial untuk dikuasai. Berikan output dalam format JSON ARRAY murni seperti berikut tanpa markdown formatting tambahan:
+[{"topic": "Sub-bab 1: ..."}, {"topic": "Sub-bab 2: ..."}]`;
+
+            const resText = await callGemini(promptText);
+            if(!resText) return;
+
+            try {
+                const cleaned = resText.replace(/```json|```/g, '').trim();
+                const items = JSON.parse(cleaned);
+                items.forEach(it => {
+                    appState.domains[appState.activeDomain].audit.push({
+                        id: 'aud_' + Date.now() + Math.random(),
+                        topic: it.topic,
+                        status: 'red',
+                        lastReview: new Date().toISOString().split('T')[0]
+                    });
+                });
+                saveState();
+                renderAuditTable();
+                alert(`Berhasil menambahkan ${items.length} sub-bab audit baru via Gemini AI!`);
+            } catch(e) {
+                alert("Gagal memproses respons AI. Coba lagi.");
+            }
+        }
+
+        async function aiGenerateFlashcardsPrompt(targetTopic = null) {
+            const domainTitle = appState.domains[appState.activeDomain].title;
+            const topic = targetTopic || prompt(`Masukkan topik untuk pembuatan soal Active Recall pada domain "${domainTitle}":`, domainTitle);
+            if(!topic) return;
+
+            const promptText = `Buatkan 3 soal Active Recall kritis beserta kunci jawaban presisi untuk topik "${topic}". Jika ada rumus matematika/fisika, gunakan format LaTeX ($...$). Berikan output JSON ARRAY murni seperti berikut tanpa markdown formatting:
+[
+  {"cat": "${topic}", "q": "Pertanyaan 1...", "a": "Kunci Jawaban 1..."},
+  {"cat": "${topic}", "q": "Pertanyaan 2...", "a": "Kunci Jawaban 2..."}
+]`;
+
+            const resText = await callGemini(promptText);
+            if(!resText) return;
+
+            try {
+                const cleaned = resText.replace(/```json|```/g, '').trim();
+                const cards = JSON.parse(cleaned);
+                cards.forEach(c => {
+                    appState.domains[appState.activeDomain].flashcards.push({
+                        id: 'fc_' + Date.now() + Math.random(),
+                        cat: c.cat,
+                        q: c.q,
+                        a: c.a,
+                        status: 'red'
+                    });
+                });
+                currentRecallIndex = appState.domains[appState.activeDomain].flashcards.length - cards.length;
+                saveState();
+                loadRecallCard();
+                alert(`Berhasil menambahkan ${cards.length} kartu Active Recall via Gemini AI!`);
+            } catch(e) {
+                alert("Gagal memproses soal dari AI. Coba lagi.");
+            }
+        }
+
+        async function aiGenerateBlurtingRefPrompt() {
+            const domainTitle = appState.domains[appState.activeDomain].title;
+            const topic = prompt(`Masukkan topik acuan materi Feynman/Blurting untuk domain "${domainTitle}":`, domainTitle);
+            if(!topic) return;
+
+            const promptText = `Susunlah Kunci Acuan Dokumen Resmi untuk topik "${topic}" secara terstruktur meliputi: Definisi Utama, Rumus/Hukum Penting, Langkah Operasional, dan Celah Kesalahan Umum. Dibuat ringkas dan padat.`;
+            const resText = await callGemini(promptText);
+            if(!resText) return;
+
+            appState.domains[appState.activeDomain].blurtingRef = resText;
+            saveState();
+            renderBlurtingRef();
+            alert("Kunci acuan berhasil diperbarui dari Gemini AI!");
+        }
+
+        // Blurting Timer & Text Handler
+        function toggleBlurtingTimer() {
+            const btn = document.getElementById('btn-timer-toggle');
+            if(blurtingTimerInterval) {
+                clearInterval(blurtingTimerInterval);
+                blurtingTimerInterval = null;
+                btn.innerText = 'Start Timer';
+                btn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold';
+            } else {
+                blurtingTimerInterval = setInterval(() => {
+                    blurtingSecondsLeft--;
+                    updateTimerDisplay();
+                    if(blurtingSecondsLeft <= 0) {
+                        clearInterval(blurtingTimerInterval);
+                        blurtingTimerInterval = null;
+                        alert("Waktu Blurting Selesai! Saatnya memeriksa kunci acuan.");
+                        toggleReferenceVisibility();
+                    }
+                }, 1000);
+                btn.innerText = 'Pause Timer';
+                btn.className = 'bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold';
+            }
+        }
+
+        function resetBlurtingTimer(minutes) {
+            if(blurtingTimerInterval) clearInterval(blurtingTimerInterval);
+            blurtingTimerInterval = null;
+            blurtingSecondsLeft = minutes * 60;
+            updateTimerDisplay();
+            document.getElementById('btn-timer-toggle').innerText = 'Start Timer';
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(blurtingSecondsLeft / 60).toString().padStart(2, '0');
+            const s = (blurtingSecondsLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${m}:${s}`;
+        }
+
+        function updateWordCount() {
+            const text = document.getElementById('blurting-input').value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            document.getElementById('blurting-word-count').innerText = `${words} kata`;
+        }
+
+        function renderBlurtingRef() {
+            const domain = appState.domains[appState.activeDomain];
+            document.getElementById('blurting-ref-content').innerText = domain.blurtingRef || "Belum ada acuan tersimpan. Klik tombol ✨ Buat Acuan Materi via AI.";
+        }
+
+        function toggleReferenceVisibility() {
+            const box = document.getElementById('blurting-reference-box');
+            const placeholder = document.getElementById('blurting-reference-placeholder');
+            const btn = document.getElementById('btn-toggle-ref');
+            
+            if(box.classList.contains('hidden')) {
+                box.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btn.innerText = 'Sembunyikan Acuan';
+            } else {
+                box.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                btn.innerText = 'Buka Kunci Acuan';
+            }
+        }
+
+        // Config & Backup JSON
+        function openConfigModal() {
+            document.getElementById('cfg-gemini-key').value = appState.geminiApiKey || '';
+            document.getElementById('configModal').classList.remove('hidden');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').classList.add('hidden');
+        }
+
+        function saveConfigModal() {
+            appState.geminiApiKey = document.getElementById('cfg-gemini-key').value.trim();
+            saveState();
+            closeConfigModal();
+        }
+
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `mastermind_backup_${appState.activeDomain}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    appState = imported;
+                    saveState();
+                    updateDomainSelector();
+                    setActiveTab('dashboard');
+                    closeConfigModal();
+                    alert("Data berhasil di-restore!");
+                } catch(err) {
+                    alert("File JSON tidak valid!");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // AI Examiner Chat Engine
+        async function sendAiQuery() {
+            const input = document.getElementById('ai-user-prompt');
+            const promptText = input.value.trim();
+            if(!promptText) return;
+
+            const chatHistory = document.getElementById('ai-chat-history');
+            
+            const userDiv = document.createElement('div');
+            userDiv.className = 'bg-indigo-950/60 p-3 rounded-xl border border-indigo-800/50 max-w-2xl ml-auto text-xs leading-relaxed space-y-1';
+            userDiv.innerHTML = `<span class="font-bold text-indigo-300">Anda:</span><p>${promptText}</p>`;
+            chatHistory.appendChild(userDiv);
+            input.value = '';
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 max-w-2xl text-xs leading-relaxed space-y-1';
+            
+            if(!appState.geminiApiKey) {
+                setTimeout(() => {
+                    aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner (Mode Offline):</span>
+                    <p>Mari uji ingatan Anda terkait <strong>"${promptText}"</strong>!</p>
+                    <p class="mt-2 text-slate-300"><strong>Soal Uji Cepat:</strong> Tuliskan 2 konsep utama atau rumus paling mendasar dari subjek tersebut di lembar kertas HVS Anda tanpa melihat catatan! (Aktifkan Gemini API Key di Pengaturan untuk respon AI otomatis).</p>`;
+                    chatHistory.appendChild(aiDiv);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }, 400);
+            } else {
+                aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner:</span><p class="animate-pulse">Memproses logika & menyusun soal uji...</p>`;
+                chatHistory.appendChild(aiDiv);
+                
+                const responseText = await callGemini(`Anda adalah AI Examiner untuk sistem belajar Active Learning Kinestetik. Pengguna sedang mempelajari: "${promptText}". Berikan penjelasan konsep paling singkat (maksimal 3 kalimat), lalu berikan 1 soal ujian Active Recall mendalam yang memaksa pengguna menjawab dari logika dasarnya!`);
+                if(responseText) {
+                    aiDiv.innerHTML = `<span class="font-bold text-indigo-400">AI Examiner:</span><p>${responseText.replace(/\n/g, '<br>')}</p>`;
+                } else {
+                    aiDiv.innerHTML = `<span class="font-bold text-rose-400">Error:</span><p>Gagal menghubungi AI API.</p>`;
+                }
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+        }
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updateDomainSelector();
+            renderDashboard();
+        });
+    </script>
+</body>
+</html>
